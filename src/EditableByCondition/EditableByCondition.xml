@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<widget id="EditableByCondition.widget.EditableByCondition" needsEntityContext="true" xmlns="http://www.mendix.com/widget/1.0/">
+    <name>EditableByCondition</name>
+    <description>This widget will manage editability of all child widgets based on a boolean microflow or attribute.</description>
+    <icon>
+	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
+	</icon>
+
+    <properties>
+		<property key="booleanMicroflow" type="microflow" required="false">
+			<caption>Boolean Microflow</caption>
+			<category>Data source</category>
+			<description>Select the Microflow that determines editability.</description>
+			<returnType type="Boolean" />
+		</property>
+		<property key="subscribeEntity" type="entity" required="false">
+		  <caption>Entity</caption>
+		  <category>Data source</category>
+		  <description>The entity that holds the boolean attribute.</description>
+		</property>
+		<property key="booleanAttribute" type="attribute" entityProperty="subscribeEntity" required="false">
+		  <caption>Boolean Attribute</caption>
+		  <category>Data source</category>
+		  <description>The field that holds the boolean for conditional editability.</description>
+		  <attributeTypes>
+			<attributeType name="Boolean"/>
+		  </attributeTypes>
+		</property>
+		<property key="buttonClass" type="string" required="false">
+		  <caption>Button Class</caption>
+		  <category>Data source</category>
+		  <description>If you would like some buttons which need a context to not be accessible a CSS class should be added in the Modeler. The widget will check that class and set editablity accordingly.</description>
+		</property>		
+		<property key="buttonDisable" type="boolean" defaultValue="true">
+		  <caption>Grey-out button</caption>
+		  <category>Data source</category>
+		  <description>When set to false, the buttons will be hidden, when set to true the buttons will be greyed-out (disabled).</description>
+		</property>
+		<property key="enableLogging" type="boolean" defaultValue="false">
+		  <caption>Enable Logging</caption>
+		  <category>Logging</category>
+		  <description>The boolean can enable/disable logging on this widget for debugging purposes.</description>
+		</property>
+    </properties>
+</widget>
+
