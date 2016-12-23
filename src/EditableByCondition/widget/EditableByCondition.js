@@ -7,7 +7,7 @@
     @version   : 1.1
     @author    : Ivo Sturm
     @date      : 23-12-2016
-    @copyright : n/a
+    @copyright : First Consulting
     @license   : Apache V2
 
     Documentation
