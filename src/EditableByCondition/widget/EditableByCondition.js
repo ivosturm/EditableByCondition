@@ -4,11 +4,11 @@
     ========================
 
     @file      : EditableByCondition.js
-    @version   : 1
+    @version   : 1.1
     @author    : Ivo Sturm
-    @date      : Sun, 18 september 2016
+    @date      : 23-12-2016
     @copyright : n/a
-    @license   : free
+    @license   : Apache V2
 
     Documentation
     ========================
@@ -19,6 +19,9 @@
 			Be aware, this widget DOES NOT REPLACE ENTITY ACCESS FOR EDIT RIGHTS. A javascript savvy person could still in runtime change the editability of the inputfield and save the 
 			object, with for instance some javascript code like: var widget = dijit.ById("mxui_widget_TextInput_3"); widget.set("disabled",false);
 	
+	v1.1	Fixed bug on button not showing when editable = false		
+			Added support for ckEditor widget. For this, added dojo/_base/lang
+	
 */
 
 // Required module list. Remove unnecessary modules, you can always get them back from the boilerplate.
@@ -28,8 +31,9 @@ define([
     "mxui/widget/_WidgetBase",
 	"mxui/dom",
 	"dojo/dom-style",
-	"dijit/registry"
-], function(declare, NodeList, _WidgetBase, dom, domStyle, registry) {
+	"dijit/registry",
+	 "dojo/_base/lang"
+], function(declare, NodeList, _WidgetBase, dom, domStyle, registry,lang) {
     "use strict";
 
     // Declare widget's prototype.
@@ -96,7 +100,7 @@ define([
 			// iterate over all children and setting their editability according to boolean variable / outcome of microflow
 			if (childWidgets){
 				for (var i = 0; i < childWidgets.length; i++) { 
-					// disable edit on all boolean attributes, inputforms and reference lists
+					// disable edit on all boolean attributes, inputforms and reference lists. Exclude the boolean attribute itself, which can still be used to make the widget (non-)editable
 					if ((childWidgets[i]._attrType || childWidgets[i]._attribute || childWidgets[i]._assoc) && childWidgets[i]._attribute !== this.booleanAttribute){
 						childWidgets[i].set("disabled",!editable);
 						countAttributeWidgets++;
@@ -112,12 +116,29 @@ define([
 							childWidgets[i].readOnly=!editable;
 							childWidgets[i].set("disabled",!editable);
 						} else {
-
-							domStyle.set(childWidgets[i].domNode, 'display', 'none');
+							// fix for when greyed out is no, button was never visible
+							if (editable){
+								domStyle.set(childWidgets[i].domNode, 'display', 'block');
+							} else {
+								domStyle.set(childWidgets[i].domNode, 'display', 'none');
+							}
 
 						}
 						countAttributeWidgets++;
 					}
+					// disable edit on CK Editor if in screen
+					if (childWidgets[i]._CKEditor){
+
+						this.ckEditor = childWidgets[i]._editor;
+						// for the ckEditor add a timeout since it will always be loaded later then this widget.
+						window.setTimeout(lang.hitch(this,function(){
+
+							this.ckEditor.setReadOnly(!editable);
+						
+						}),500);
+						countAttributeWidgets++;
+					}
+					
 				}
 				if (this.enableLogging){
 					console.log(this.logNode + "Attribute Child Widgets disabled: " + countAttributeWidgets);
