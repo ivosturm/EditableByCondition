@@ -7,7 +7,7 @@
     @version   : 1.1
     @author    : Ivo Sturm
     @date      : 23-12-2016
-    @copyright : First Consulting
+    @copyright : n/a
     @license   : Apache V2
 
     Documentation
@@ -57,6 +57,7 @@ define([
 			this._handles = [];
 			this.logNode = "EditableByCondition widget: ";
 			this._contextObj = null;
+			this.buttonDisplayArr = [];
         },
 
         // dijit._WidgetBase.postCreate is called after constructing the widget. Implement to do extra setup work.
@@ -112,13 +113,22 @@ define([
 					}
 					// disable buttons that with set class
 					if (childWidgets[i].domNode.type==="button" && dojo.hasClass(childWidgets[i].domNode,this.buttonClass)){
+						// store the initial style.display property of the buttons for when toggling editability on page. 
+						if (!this.buttonDisplayArr[i]){
+							var elem = childWidgets[i].domNode;
+							if (elem.currentStyle) {
+								this.buttonDisplayArr[i] = elem.currentStyle.display;
+							} else if (window.getComputedStyle) {
+								this.buttonDisplayArr[i] = window.getComputedStyle(elem, null).getPropertyValue("display");
+							}				
+						} 
 						if (this.buttonDisable){
 							childWidgets[i].readOnly=!editable;
 							childWidgets[i].set("disabled",!editable);
 						} else {
 							// fix for when greyed out is no, button was never visible
 							if (editable){
-								domStyle.set(childWidgets[i].domNode, 'display', 'block');
+								domStyle.set(childWidgets[i].domNode, 'display', this.buttonDisplayArr[i]);
 							} else {
 								domStyle.set(childWidgets[i].domNode, 'display', 'none');
 							}
@@ -139,7 +149,9 @@ define([
 						countAttributeWidgets++;
 					}
 					
+					
 				}
+
 				if (this.enableLogging){
 					console.log(this.logNode + "Attribute Child Widgets disabled: " + countAttributeWidgets);
 				}
