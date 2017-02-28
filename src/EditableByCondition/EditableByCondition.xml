@@ -57,6 +57,11 @@
 			<attributeType name="Boolean"/>
 		  </attributeTypes>
 		</property>
+		<property key="editableOnTrue" type="boolean" defaultValue="true">
+		  <caption>Editable On True</caption>
+		  <category>Data source</category>
+		  <description>When set to No, editability will be set on whether the boolean attribute has a false value. By default editability is set when boolean has true value.</description>
+		</property>
 		<property key="buttonClass" type="string" required="false">
 		  <caption>Button Class</caption>
 		  <category>Data source</category>
