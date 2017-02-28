@@ -4,9 +4,9 @@
     ========================
 
     @file      : EditableByCondition.js
-    @version   : 1.1
+    @version   : 1.2
     @author    : Ivo Sturm
-    @date      : 23-12-2016
+    @date      : 28-2-2017
     @copyright : n/a
     @license   : Apache V2
 
@@ -21,6 +21,8 @@
 	
 	v1.1	Fixed bug on button not showing when editable = false		
 			Added support for ckEditor widget. For this, added dojo/_base/lang
+			
+	v1.2	Added editableOnTrue setting.
 	
 */
 
@@ -46,6 +48,7 @@ define([
 		enableLogging: false,
 		buttonClass: "",
 		buttonDisable: false,
+		editableOnTrue: true,
 		
 		// Internal variables. Non-primitives created in the prototype are shared between all widget instances.
         _handles: [],
@@ -203,8 +206,12 @@ define([
 						console.log(this.logNode + ": AttributeName="+this.booleanAttribute);
 					}
 					// get actual value of attribute from mxObject
-					this.booleanValue = this._contextObj.get(this.booleanAttribute);				
-					this.setEditable(this.booleanValue);
+					this.booleanValue = this._contextObj.get(this.booleanAttribute);
+					if (this.editableOnTrue){
+						this.setEditable(this.booleanValue);
+					} else {
+						this.setEditable(!this.booleanValue);
+					}
 
 				}
 			}
@@ -228,6 +235,7 @@ define([
 							console.log(this.logNode + " Update on entity " + entity);
 						}
 						this._updateRendering();
+						
 				})
 			});
 			this._handles.push(entityHandle);
@@ -254,7 +262,11 @@ define([
 								console.log("Object with guid " + guid + " had its attribute " +
 								attr + " change to " + value);
 							}				
-							this.setEditable(value);;
+							if (this.editableOnTrue){
+								this.setEditable(value);
+							} else {
+								this.setEditable(!value);
+							}
                     })
                 });
 				this._handles.push(attrHandle);
