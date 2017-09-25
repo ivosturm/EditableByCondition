@@ -151,7 +151,17 @@ define([
 						}),500);
 						countAttributeWidgets++;
 					}
-					
+                    
+                    // disable boolean slider
+                    if (childWidgets[i].controlNode) {
+                        var el = childWidgets[i].controlNode;
+                        if (dojo.hasClass(el, 'wgt-BooleanSlider_control')) {
+                            if (!editable) {
+                                el.getElementsByTagName('input')[0].setAttribute('disabled','');
+                            }
+                            countAttributeWidgets++;
+                        }
+                    }
 					
 				}
 
@@ -227,18 +237,21 @@ define([
         _resetSubscriptions: function() {
             // Release handles on previous object, if any.
             this._unsubscribe();
-			// Mendix in client API 6 advises to use this.subscribe over mx.data.subscribe
-			var entityHandle = this.subscribe({
-				entity: this.subscribeEntity,
-				callback: dojo.hitch(this, function(entity) {
-						if (this.enableLogging){
-							console.log(this.logNode + " Update on entity " + entity);
-						}
-						this._updateRendering();
-						
-				})
-			});
-			this._handles.push(entityHandle);
+            
+            if (this.source !== 'Microflow') {
+                // Mendix in client API 6 advises to use this.subscribe over mx.data.subscribe
+                var entityHandle = this.subscribe({
+                    entity: this.subscribeEntity,
+                    callback: dojo.hitch(this, function(entity) {
+                            if (this.enableLogging){
+                                console.log(this.logNode + " Update on entity " + entity);
+                            }
+                            this._updateRendering();
+
+                    })
+                });
+                this._handles.push(entityHandle);
+            }
 			
 			if (this._contextObj){
 				// Mendix in client API 6 advises to use this.subscribe over mx.data.subscribe
