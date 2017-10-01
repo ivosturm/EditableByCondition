@@ -4,9 +4,9 @@
     ========================
 
     @file      : EditableByCondition.js
-    @version   : 1.2
+    @version   : 1.3
     @author    : Ivo Sturm
-    @date      : 28-2-2017
+    @date      : 1-10-2017
     @copyright : n/a
     @license   : Apache V2
 
@@ -23,6 +23,8 @@
 			Added support for ckEditor widget. For this, added dojo/_base/lang
 			
 	v1.2	Added editableOnTrue setting.
+	
+	v1.3	Added support for BooleanSlider widget with support of Alexander Assink.
 	
 */
 
