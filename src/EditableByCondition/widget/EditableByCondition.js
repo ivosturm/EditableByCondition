@@ -4,9 +4,9 @@
     ========================
 
     @file      : EditableByCondition.js
-    @version   : 1.3
+    @version   : 1.4
     @author    : Ivo Sturm
-    @date      : 1-10-2017
+    @date      : 7-2-2019
     @copyright : n/a
     @license   : Apache V2
 
@@ -25,6 +25,8 @@
 	v1.2	Added editableOnTrue setting.
 	
 	v1.3	Added support for BooleanSlider widget with support of Alexander Assink.
+	
+	v1.4	Updated to Mendix 7.22.2 / Fix for 'Trying to unsubscribe using an invalid subscription handle'.
 	
 */
 
@@ -59,15 +61,17 @@ define([
 
         // dojo.declare.constructor is called to construct the widget instance. Implement to initialize non-primitive properties.
         constructor: function() {
-			this._handles = [];
-			this.logNode = "EditableByCondition widget: ";
-			this._contextObj = null;
-			this.buttonDisplayArr = [];
+
         },
 
         // dijit._WidgetBase.postCreate is called after constructing the widget. Implement to do extra setup work.
         postCreate: function() {
+			this._handles = [];
+			this.logNode = "EditableByCondition widget: ";
+			this._contextObj = null;
+			this.buttonDisplayArr = [];
 			this.source = "";
+			
 			if (this.booleanMicroflow==this.booleanAttribute){
 				if (this.enableLogging){
 					console.error(this.logNode +  "ill-configured. Choose either Microflow or Attribute as source");
@@ -228,34 +232,20 @@ define([
 				}
 			}
 		},
-		_unsubscribe: function () {
-          if (this._handles) {
-              mx.data.unsubscribe(this._handles);
-              this._handles = [];
-          }
-        },
+		_resetSubscriptions: function() {
+			this._removeSubscriptions();
+			this._handles = [];
+			this._addSubscriptions();
+		},
 
+		_removeSubscriptions: function() {
+			this.unsubscribeAll();
+		},
 		// Reset subscriptions.
-        _resetSubscriptions: function() {
+        _addSubscriptions: function() {
             // Release handles on previous object, if any.
-            this._unsubscribe();
-            
-            if (this.source !== 'Microflow') {
-                // Mendix in client API 6 advises to use this.subscribe over mx.data.subscribe
-                var entityHandle = this.subscribe({
-                    entity: this.subscribeEntity,
-                    callback: dojo.hitch(this, function(entity) {
-                            if (this.enableLogging){
-                                console.log(this.logNode + " Update on entity " + entity);
-                            }
-                            this._updateRendering();
-
-                    })
-                });
-                this._handles.push(entityHandle);
-            }
-			
 			if (this._contextObj){
+				this.unsubscribeAll();
 				// Mendix in client API 6 advises to use this.subscribe over mx.data.subscribe
 				var contextHandle = this.subscribe({
 					entity: this._contextObj,
@@ -285,7 +275,24 @@ define([
                     })
                 });
 				this._handles.push(attrHandle);
-			}
+			}		
+            
+            if (this.source !== 'Microflow') {
+                // Mendix in client API 6 advises to use this.subscribe over mx.data.subscribe
+                var entityHandle = this.subscribe({
+                    entity: this.subscribeEntity,
+                    callback: dojo.hitch(this, function(entity) {
+                            if (this.enableLogging){
+                                console.log(this.logNode + " Update on entity " + entity);
+                            }
+                            this._updateRendering();
+
+                    })
+                });
+                this._handles.push(entityHandle);
+            }
+			
+
 			
 			if (this.enableLogging){
 				console.log(this.logNode + "subscriptions: ");
