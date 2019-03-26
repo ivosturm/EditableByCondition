@@ -4,9 +4,9 @@
     ========================
 
     @file      : EditableByCondition.js
-    @version   : 1.4
+    @version   : 1.5
     @author    : Ivo Sturm
-    @date      : 7-2-2019
+    @date      : 26-3-2019
     @copyright : n/a
     @license   : Apache V2
 
@@ -28,6 +28,10 @@
 	
 	v1.4	Updated to Mendix 7.22.2 / Fix for 'Trying to unsubscribe using an invalid subscription handle'.
 	
+	v1.4.1	Fix for boolean slider in case of widget using a boolean attribute. Added a time out and implemented dojoAttr library to toggle disabling the boolean slider
+	
+	v1.5	Fix for subscriptions issue in case of multiple types of entities are subscribed
+	
 */
 
 // Required module list. Remove unnecessary modules, you can always get them back from the boilerplate.
@@ -38,8 +42,9 @@ define([
 	"mxui/dom",
 	"dojo/dom-style",
 	"dijit/registry",
-	 "dojo/_base/lang"
-], function(declare, NodeList, _WidgetBase, dom, domStyle, registry,lang) {
+	"dojo/_base/lang",
+	"dojo/dom-attr",
+], function(declare, NodeList, _WidgetBase, dom, domStyle, registry,lang,dojoAttr) {
     "use strict";
 
     // Declare widget's prototype.
@@ -58,6 +63,7 @@ define([
         _handles: [],
         _contextObj: null,
 		logNode: "EditableByCondition widget: ",
+		_booleanSliderArray: [],
 
         // dojo.declare.constructor is called to construct the widget instance. Implement to initialize non-primitive properties.
         constructor: function() {
@@ -70,6 +76,7 @@ define([
 			this.logNode = "EditableByCondition widget: ";
 			this._contextObj = null;
 			this.buttonDisplayArr = [];
+			this._booleanSliderArray = [];
 			this.source = "";
 			
 			if (this.booleanMicroflow==this.booleanAttribute){
@@ -90,7 +97,7 @@ define([
 			if (this.enableLogging){
 				console.log(this.logNode + "AttributeValue="+editable);
 			}
-
+			
 			// find the enclosing dataview widget
 			var widget = dijit.getEnclosingWidget(this.domNode.parentNode);
 
@@ -109,6 +116,7 @@ define([
 			var countAttributeWidgets=0;
 			// iterate over all children and setting their editability according to boolean variable / outcome of microflow
 			if (childWidgets){
+
 				for (var i = 0; i < childWidgets.length; i++) { 
 					// disable edit on all boolean attributes, inputforms and reference lists. Exclude the boolean attribute itself, which can still be used to make the widget (non-)editable
 					if ((childWidgets[i]._attrType || childWidgets[i]._attribute || childWidgets[i]._assoc) && childWidgets[i]._attribute !== this.booleanAttribute){
@@ -161,20 +169,39 @@ define([
                     // disable boolean slider
                     if (childWidgets[i].controlNode) {
                         var el = childWidgets[i].controlNode;
-                        if (dojo.hasClass(el, 'wgt-BooleanSlider_control')) {
-                            if (!editable) {
-                                el.getElementsByTagName('input')[0].setAttribute('disabled','');
-                            }
+
+						// add all boolean sliders to an array to later on add a timeout on the full list. Adding time-outs one by one will not work with multiple boolean sliders on the page
+                        if (el && dojo.hasClass(el, 'wgt-BooleanSlider_control')) {
+							
+							var booleanSlider = el.getElementsByTagName('input')[0];
+							this._booleanSliderArray.push(booleanSlider);
+								                            
                             countAttributeWidgets++;
                         }
                     }
+					
+					
 					
 				}
 
 				if (this.enableLogging){
 					console.log(this.logNode + "Attribute Child Widgets disabled: " + countAttributeWidgets);
 				}
-			}		
+			}
+			// for the boolean slider add a timeout since in case of this widget using a datasource microflow, the boolean slider is loaded later than this widget
+			window.setTimeout(lang.hitch(this,function(){
+									
+				for (var k = 0 ; k < this._booleanSliderArray.length ; k++){
+					//console.log(this._booleanSliderArray[k].parentNode.parentNode.parentNode.firstChild.innerHTML);
+					if (!editable) {
+						
+						dojoAttr.set(this._booleanSliderArray[k], "disabled", "");
+					} else {
+						dojoAttr.remove(this._booleanSliderArray[k], "disabled");									
+					}									
+				
+				}
+			}),1000);
 			
 		},
 	
@@ -245,45 +272,53 @@ define([
         _addSubscriptions: function() {
             // Release handles on previous object, if any.
 			if (this._contextObj){
+				var guid = this._contextObj.getGuid();
+				var entityname  = this._contextObj.getEntity();
 				this.unsubscribeAll();
 				// Mendix in client API 6 advises to use this.subscribe over mx.data.subscribe
+				// if a context object is found, subscribe to that specific object, irrespective whether source is microflow or attribute
 				var contextHandle = this.subscribe({
-					entity: this._contextObj,
+					guid: guid,
 					callback: dojo.hitch(this, function(entity) {
 							if (this.enableLogging){
-								console.log(this.logNode + " Update on entity " + entity);
+								console.log(this.logNode + " Update via guid on entity " + entityname + " with guid " + entity);
 							}
-							this._updateRendering();
+							this._updateRendering(guid,this);
 					})
 				});
+				if (this.enableLogging){
+					console.log("contextHandle set on " + entityname + " with guid " + guid);
+				}
 				this._handles.push(contextHandle);
 				
-				var attrHandle = this.subscribe({
-                    guid: this._contextObj.getGuid(),
-                    attr: this.booleanAttribute,
-					//entity: this.CallerOfPage,
-                    callback: dojo.hitch(this, function(guid, attr, value) {
-                        	if (this.enableLogging){
-								console.log("Object with guid " + guid + " had its attribute " +
-								attr + " change to " + value);
-							}				
-							if (this.editableOnTrue){
-								this.setEditable(value);
-							} else {
-								this.setEditable(!value);
-							}
-                    })
-                });
-				this._handles.push(attrHandle);
+				// if boolean attribute is also set, register to changes on that boolean attribute
+				if (this.booleanAttribute){
+					var attrHandle = this.subscribe({
+						guid: this._contextObj.getGuid(),
+						attr: this.booleanAttribute,
+						callback: dojo.hitch(this, function(guid, attr, value) {
+								if (this.enableLogging){
+									console.log("Object with guid " + guid + " had its attribute " +
+									attr + " change to " + value);
+								}				
+								if (this.editableOnTrue){
+									this.setEditable(value);
+								} else {
+									this.setEditable(!value);
+								}
+						})
+					});
+					this._handles.push(attrHandle);
+				}
 			}		
             
             if (this.source !== 'Microflow') {
-                // Mendix in client API 6 advises to use this.subscribe over mx.data.subscribe
+                // if source is attribute subscribe to changes in generic entity as well
                 var entityHandle = this.subscribe({
                     entity: this.subscribeEntity,
                     callback: dojo.hitch(this, function(entity) {
                             if (this.enableLogging){
-                                console.log(this.logNode + " Update on entity " + entity);
+                                console.log(this.logNode + " Update via entity class on entity " + entity);
                             }
                             this._updateRendering();
 
